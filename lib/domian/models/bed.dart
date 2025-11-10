@@ -24,20 +24,34 @@ class Bed {
     status = BedStatus.AVAILABLE;
   }
 
-  Map<String, dynamic> toJson() => {
-    'bedId': bedId,
-    'status': status,
-    'patient': patient?.toJson(),
-  };
+  Map<String, dynamic> toJson() {
+    // Make sure status matches patient presence
+    status = patient != null ? BedStatus.OCCUPIED : BedStatus.AVAILABLE;
 
-  factory Bed.fromJson(Map<String, dynamic> json) => Bed(
+    return {
+      'bedId': bedId,
+      'status': status.toString().split('.').last,
+      'patient': patient?.toJson(),
+    };
+  }
+
+  factory Bed.fromJson(Map<String, dynamic> json) {
+    var bed = Bed(
       bedId: json['bedId'],
       status: BedStatus.values.firstWhere(
-        (e) => e.toString() == json['status'],
+        (e) => e.toString().split('.').last == json['status'],
+        orElse: () => BedStatus.AVAILABLE,
       ),
-      patient: json['patient'] != null
-          ? Patient.fromJson(json['patient'])
-          : null,
     );
-  
+
+    // If there's a patient, load them and update bed status
+    if (json['patient'] != null) {
+      bed.patient = Patient.fromJson(json['patient']);
+      bed.status = BedStatus.OCCUPIED;
+    } else {
+      bed.status = BedStatus.AVAILABLE;
+    }
+
+    return bed;
+  }
 }

@@ -42,21 +42,18 @@ abstract class Rooms {
 
   Map<String, dynamic> toJson() => {
     'roomId': roomId,
-    'roomType': formatRoomType(type),
+    'roomType': type.toString().split('.').last,
     'roomNumber': roomNumber,
     'beds': beds.map((bed) => bed.toJson()).toList(),
   };
 
-// AI generate
+  // AI generate
   factory Rooms.fromJson(Map<String, dynamic> json) {
     // Convert formatted string back to enum value
-    var formattedType = json['roomType'].toString().toUpperCase().replaceAll(
-      ' ',
-      '_',
-    );
-
     var roomType = RoomType.values.firstWhere(
-      (type) => type.toString().split('.').last == formattedType,
+      (type) => type.toString().split('.').last == json['roomType'],
+      orElse: () =>
+          throw FormatException('Invalid room type: ${json['roomType']}'),
     );
     List<Bed> beds = (json['beds'] as List)
         .map((bedJson) => Bed.fromJson(bedJson))

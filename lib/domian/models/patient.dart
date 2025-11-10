@@ -36,30 +36,34 @@ class Patient {
   Map<String, dynamic> toJson() => {
     'patientId': patientId,
     'patientName': patientName,
-    'gender': gender.toString(),
+    'gender': gender.toString().split('.').last,
     'entryDate': entryDate.toIso8601String(),
     'leaveDate': leaveDate?.toIso8601String(),
-    'condition': condition.toString(),
+    'condition': condition.toString().split('.').last,
     'requestPrivateRoom': requestPrivateRoom,
     'currentBed': currentBed,
     'bedHistory': bedHistroy,
     'history': history,
   };
 
-// AI generate
+  // AI generate
   factory Patient.fromJson(Map<String, dynamic> json) {
     var patient = Patient(
       patientId: json['patientId'],
       patientName: json['patientName'],
       gender: PatientGender.values.firstWhere(
-        (e) => e.toString() == json['gender'],
+        (e) => e.toString().split('.').last == json['gender'],
+        orElse: () =>
+            throw FormatException('Invalid gender: ${json['gender']}'),
       ),
       entryDate: DateTime.parse(json['entryDate']),
       leaveDate: json['leaveDate'] != null
           ? DateTime.parse(json['leaveDate'])
           : null,
       condition: PatientCondition.values.firstWhere(
-        (e) => e.toString() == json['condition'],
+        (e) => e.toString().split('.').last == json['condition'],
+        orElse: () =>
+            throw FormatException('Invalid condition: ${json['condition']}'),
       ),
       requestPrivateRoom: json['requestPrivateRoom'],
     );

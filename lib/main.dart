@@ -1,6 +1,6 @@
-// import 'ui/roomConsole.dart';
+import 'ui/systemConsole.dart';
 
-// void main() {
-//   RoomConsole start = RoomConsole();
-//   start.consoleRoomManagement();
-// }
+void main() {
+  SystemConsole start = SystemConsole();
+  start.start();
+}

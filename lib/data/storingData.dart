@@ -9,69 +9,116 @@ import 'package:room_management/domian/services/hospitalManagement.dart';
 
 class StoringData {
   Future<void> saveData(HospitalSystem system, String filePath) async {
-    final data = {
-      'activePatients': system.activePatients
-          .map((patient) => patient.toJson())
-          .toList(),
-      'recoveredPatients': system.recoveredPatients
-          .map((patient) => patient.toJson())
-          .toList(),
-      'rooms': system.allRooms.map((room) => room.toJson()).toList(),
-    };
+    try {
+      final data = {
+        'activePatients': system.activePatients
+            .map((patient) => patient.toJson())
+            .toList(),
+        'recoveredPatients': system.recoveredPatients
+            .map((patient) => patient.toJson())
+            .toList(),
+        'rooms': system.allRooms.map((room) => room.toJson()).toList(),
+      };
 
-    final file = File(filePath);
-    await file.writeAsString(jsonEncode(data));
+      final encodedData = const JsonEncoder.withIndent('  ').convert(data);
+
+      final file = File(filePath);
+      final dir = Directory(file.parent.path);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+
+      // First write to a temporary file
+      final tempFile = File('${filePath}.tmp');
+      await tempFile.writeAsString(encodedData);
+
+      // If successful, move the temp file to the actual file
+      await tempFile.rename(filePath);
+    } catch (e) {
+      throw Exception('Failed to save data: $e');
+    }
   }
 
   Future<void> loadData(HospitalSystem system, String filePath) async {
-    final file = File(filePath);
+    try {
+      final file = File(filePath);
 
-    if (!await file.exists()) {
-      throw FileSystemException('File not found', filePath);
-    }
-
-    final jsonString = await file.readAsString();
-    if (jsonString.trim().isEmpty) return;
-
-    final Map<String, dynamic> data = jsonDecode(jsonString);
-
-    system.activePatients.clear();
-    system.recoveredPatients.clear();
-    for (final patient in data['activePatients']) {
-      system.activePatients.add(Patient.fromJson(patient));
-    }
-    for (final patient in data['recoveredPatients']) {
-      system.recoveredPatients.add(Patient.fromJson(patient));
-    }
-
-    final rooms = (data['rooms'] as List)
-        .map((r) => Rooms.fromJson(r))
-        .toList();
-
-    system.generalRooms.clear();
-    system.privateRooms.clear();
-    system.emergancyRooms.clear();
-    system.icuRooms.clear();
-    system.operatingRooms.clear();
-
-    for (final room in rooms) {
-      switch (room.type) {
-        case RoomType.GENERAL_ROOM:
-          system.generalRooms.add(room as GeneralRoom);
-          break;
-        case RoomType.PRIVATE_ROOM:
-          system.privateRooms.add(room as PrivateRoom);
-          break;
-        case RoomType.ICU_ROOM:
-          system.icuRooms.add(room as ICURoom);
-          break;
-        case RoomType.EMERGENCY_ROOM:
-          system.emergancyRooms.add(room as EmergancyRoom);
-          break;
-        case RoomType.OPERATING_ROOM:
-          system.operatingRooms.add(room as OperatingRoom);
-          break;
+      if (!await file.exists()) {
+        throw FileSystemException('File not found', filePath);
       }
+
+      final jsonString = await file.readAsString();
+      if (jsonString.trim().isEmpty) return;
+
+      Map<String, dynamic> data;
+      try {
+        data = jsonDecode(jsonString) as Map<String, dynamic>;
+      } on FormatException {
+        // Try to load backup file if main file is corrupted
+        final backupFile = File('${filePath}.bak');
+        if (await backupFile.exists()) {
+          final backupJson = await backupFile.readAsString();
+          data = jsonDecode(backupJson) as Map<String, dynamic>;
+        } else {
+          rethrow;
+        }
+      }
+
+      // Clear existing data
+      system.activePatients.clear();
+      system.recoveredPatients.clear();
+      system.generalRooms.clear();
+      system.privateRooms.clear();
+      system.emergancyRooms.clear();
+      system.icuRooms.clear();
+      system.operatingRooms.clear();
+
+      // Load active patients
+      if (data['activePatients'] != null) {
+        for (final patient in data['activePatients'] as List) {
+          system.activePatients.add(
+            Patient.fromJson(patient as Map<String, dynamic>),
+          );
+        }
+      }
+
+      // Load recovered patients
+      if (data['recoveredPatients'] != null) {
+        for (final patient in data['recoveredPatients'] as List) {
+          system.recoveredPatients.add(
+            Patient.fromJson(patient as Map<String, dynamic>),
+          );
+        }
+      }
+
+      // Load rooms
+      if (data['rooms'] != null) {
+        final rooms = (data['rooms'] as List)
+            .map((r) => Rooms.fromJson(r as Map<String, dynamic>))
+            .toList();
+
+        for (final room in rooms) {
+          switch (room.type) {
+            case RoomType.GENERAL_ROOM:
+              system.generalRooms.add(room as GeneralRoom);
+              break;
+            case RoomType.PRIVATE_ROOM:
+              system.privateRooms.add(room as PrivateRoom);
+              break;
+            case RoomType.ICU_ROOM:
+              system.icuRooms.add(room as ICURoom);
+              break;
+            case RoomType.EMERGENCY_ROOM:
+              system.emergancyRooms.add(room as EmergancyRoom);
+              break;
+            case RoomType.OPERATING_ROOM:
+              system.operatingRooms.add(room as OperatingRoom);
+              break;
+          }
+        }
+      }
+    } catch (e) {
+      throw Exception('Failed to load data: $e');
     }
   }
 }
