@@ -6,7 +6,7 @@ import 'package:room_management/domian/models/roomSubClass.dart';
 class HospitalSystem {
   final List<GeneralRoom> generalRooms;
   final List<PrivateRoom> privateRooms;
-  final List<EmergancyRoom> emergancyRooms;
+  final List<EmergencyRoom> emergencyRooms;
   final List<ICURoom> icuRooms;
   final List<OperatingRoom> operatingRooms;
 
@@ -16,11 +16,11 @@ class HospitalSystem {
   HospitalSystem()
     : generalRooms = [],
       privateRooms = [],
-      emergancyRooms = [],
+      emergencyRooms = [],
       icuRooms = [],
       operatingRooms = [] {
     for (int em = 0; em < 5; em++) {
-      emergancyRooms.add(EmergancyRoom(roomNumber: allocateRoomNumber()));
+      emergencyRooms.add(EmergencyRoom(roomNumber: allocateRoomNumber()));
     }
     for (int gn = 0; gn < 10; gn++) {
       generalRooms.add(GeneralRoom(roomNumber: allocateRoomNumber()));
@@ -43,7 +43,7 @@ class HospitalSystem {
     typeRaw.toString().split('.').last;
     final typeStr = typeRaw
         .toString()
-        .replaceAll('_', '')
+        .replaceAll('_', ' ')
         .toLowerCase()
         .split(' ')
         .map((s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}')
@@ -69,7 +69,7 @@ class HospitalSystem {
           assignToGeneral(patient);
         }
         break;
-      case PatientCondition.NEEDS_SURGERY:
+      case PatientCondition.NEED_SURGERY:
         assignToOperating(patient);
         break;
       case PatientCondition.RECOVERED:
@@ -97,7 +97,7 @@ class HospitalSystem {
         assignToEmergency(patient);
         break;
       case RoomType.OPERATING_ROOM:
-        patient.condition = PatientCondition.NEEDS_SURGERY;
+        patient.condition = PatientCondition.NEED_SURGERY;
         assignToOperating(patient);
         break;
       case RoomType.PRIVATE_ROOM:
@@ -126,7 +126,7 @@ class HospitalSystem {
   }
 
   void assignToEmergency(Patient patient) {
-    for (var room in emergancyRooms) {
+    for (var room in emergencyRooms) {
       final availableBed = room.getAvailableBed();
       if (availableBed != null) {
         availableBed.assignPatient(patient);
@@ -182,27 +182,6 @@ class HospitalSystem {
     activePatients.remove(patient);
   }
 
-  Map<RoomType, RoomTypeStatus> getRoomStatus() {
-    final status = <RoomType, RoomTypeStatus>{};
-    for (final room in allRooms) {
-      final type = room.type;
-      final availableCount = room.beds
-          .where((b) => b.status == BedStatus.AVAILABLE)
-          .length;
-      final totalCount = room.beds.length;
-      final occupiedCount = totalCount - availableCount;
-
-      final prev = status[type] ?? const RoomTypeStatus();
-      status[type] = prev.add(
-        rooms: 1,
-        available: availableCount,
-        occupied: occupiedCount,
-        total: totalCount,
-      );
-    }
-    return status;
-  }
-
   bool roomAvailability(Rooms room) => room.getAvailableBed() != null;
 
   Rooms? findPatientCurrentRoom(Patient patient) {
@@ -228,7 +207,7 @@ class HospitalSystem {
   }
 
   List<Rooms> get allRooms => [
-    ...emergancyRooms,
+    ...emergencyRooms,
     ...generalRooms,
     ...icuRooms,
     ...privateRooms,
@@ -252,7 +231,7 @@ class HospitalSystem {
     final roomTypeMap = {
       PatientCondition.CRITICAL: RoomType.ICU_ROOM,
       PatientCondition.EMERGENCY: RoomType.EMERGENCY_ROOM,
-      PatientCondition.NEEDS_SURGERY: RoomType.OPERATING_ROOM,
+      PatientCondition.NEED_SURGERY: RoomType.OPERATING_ROOM,
       PatientCondition.STABLE: patient.requestPrivateRoom
           ? RoomType.PRIVATE_ROOM
           : RoomType.GENERAL_ROOM,
@@ -263,40 +242,4 @@ class HospitalSystem {
       transferPatient(patient, newRoomType);
     }
   }
-}
-
-// AI generate
-class RoomTypeStatus {
-  final int rooms;
-  final int available;
-  final int occupied;
-  final int total;
-
-  const RoomTypeStatus({
-    this.rooms = 0,
-    this.available = 0,
-    this.occupied = 0,
-    this.total = 0,
-  });
-
-  RoomTypeStatus add({
-    required int rooms,
-    required int available,
-    required int occupied,
-    required int total,
-  }) {
-    return RoomTypeStatus(
-      rooms: rooms + this.rooms,
-      available: available + this.available,
-      occupied: occupied + this.occupied,
-      total: total + this.total,
-    );
-  }
-
-  Map<String, int> toJson() => {
-    'rooms': rooms,
-    'available': available,
-    'occupied': occupied,
-    'total': total,
-  };
 }

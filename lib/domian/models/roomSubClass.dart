@@ -11,8 +11,8 @@ class GeneralRoom extends Rooms {
       );
 }
 
-class EmergancyRoom extends Rooms {
-  EmergancyRoom({List<Bed>? beds, required int roomNumber})
+class EmergencyRoom extends Rooms {
+  EmergencyRoom({List<Bed>? beds, required int roomNumber})
     : super(
         type: RoomType.EMERGENCY_ROOM,
         beds: beds ?? [Bed()],

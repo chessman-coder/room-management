@@ -2,15 +2,13 @@ import 'package:room_management/domian/models/enum.dart';
 import 'package:uuid/uuid.dart';
 import 'patient.dart';
 
-var uuid = Uuid().v4();
-
 class Bed {
   final String bedId;
   Patient? patient;
   BedStatus status;
 
   Bed({String? bedId, this.patient, this.status = BedStatus.AVAILABLE})
-    : bedId = bedId ?? uuid;
+    : bedId = bedId ?? Uuid().v4();
 
   void assignPatient(Patient newPatient) {
     patient = newPatient;

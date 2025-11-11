@@ -69,7 +69,7 @@ abstract class Rooms {
       case RoomType.ICU_ROOM:
         return ICURoom(roomNumber: roomNumber, beds: beds);
       case RoomType.EMERGENCY_ROOM:
-        return EmergancyRoom(roomNumber: roomNumber, beds: beds);
+        return EmergencyRoom(roomNumber: roomNumber, beds: beds);
       case RoomType.OPERATING_ROOM:
         return OperatingRoom(roomNumber: roomNumber, beds: beds);
     }

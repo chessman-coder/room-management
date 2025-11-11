@@ -69,7 +69,7 @@ class StoringData {
       system.recoveredPatients.clear();
       system.generalRooms.clear();
       system.privateRooms.clear();
-      system.emergancyRooms.clear();
+      system.emergencyRooms.clear();
       system.icuRooms.clear();
       system.operatingRooms.clear();
 
@@ -109,7 +109,7 @@ class StoringData {
               system.icuRooms.add(room as ICURoom);
               break;
             case RoomType.EMERGENCY_ROOM:
-              system.emergancyRooms.add(room as EmergancyRoom);
+              system.emergencyRooms.add(room as EmergencyRoom);
               break;
             case RoomType.OPERATING_ROOM:
               system.operatingRooms.add(room as OperatingRoom);

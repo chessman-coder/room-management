@@ -7,14 +7,14 @@ import 'package:room_management/domian/services/hospitalManagement.dart';
 class SystemConsole {
   final HospitalSystem hospitalSystem;
   final StoringData _storingData;
-  static const String _dataFilePath = 'lib/data/hospitalData.json';
+  static const String _dataFilePath = 'data/hospitalData.json';
 
   SystemConsole()
     : hospitalSystem = HospitalSystem(),
-      _storingData = StoringData() {
-    _loadData(); // Load data when system starts
-  }
+      _storingData = StoringData() {}
   Future<void> start() async {
+    // Ensure data is loaded before entering the main loop
+    await _loadData();
     bool isRunning = true;
 
     while (isRunning) {
@@ -26,19 +26,16 @@ class SystemConsole {
           assignNewPatient();
           break;
         case '2':
-          transferPatient();
-          break;
-        case '3':
           changePatientCondition();
           break;
-        case '4':
+        case '3':
           showPatients();
           break;
-        case '5':
+        case '4':
           showAvailableRoomAndBed();
           break;
         case '0':
-          await _saveData(); // Auto-save before exit
+          await _saveData(); // save before exit
           isRunning = false;
           print('Exiting system...');
           break;
@@ -51,10 +48,9 @@ class SystemConsole {
   void printMenu() {
     print('\n=== Room Management System ===');
     print('1. Assign new patient');
-    print('2. Transfer patient');
-    print('3. Change patient condition');
-    print('4. Show patients');
-    print('5. Show available room and bed');
+    print('2. Change patient condition');
+    print('3. Show patients');
+    print('4. Show available room and bed');
     print('0. Exit');
     stdout.write('Enter your choice: ');
   }
@@ -95,7 +91,7 @@ class SystemConsole {
         condition = PatientCondition.CRITICAL;
         break;
       case '4':
-        condition = PatientCondition.NEEDS_SURGERY;
+        condition = PatientCondition.NEED_SURGERY;
         break;
       default:
         print('Invalid condition. Defaulting to Stable.');
@@ -125,72 +121,7 @@ class SystemConsole {
     }
 
     print('Patient has been assigned successfully.');
-    _saveData(); // Auto-save after assigning patient
-  }
-
-  void transferPatient() {
-    print('\n--- Transfer Patient ---');
-
-    // TODO: Implement patient transfer logic
-    if (hospitalSystem.activePatients.isEmpty) {
-      print('No active patients to transfer.');
-      return;
-    }
-
-    print('Select patient to transfer:');
-    for (var i = 0; i < hospitalSystem.activePatients.length; i++) {
-      print('${i + 1}. ${hospitalSystem.activePatients[i].patientName}');
-    }
-    stdout.write('Enter patient number: ');
-
-    final patientChoice = int.tryParse(stdin.readLineSync() ?? '');
-    if (patientChoice == null ||
-        patientChoice < 1 ||
-        patientChoice > hospitalSystem.activePatients.length) {
-      print('Invalid patient selection.');
-      return;
-    }
-
-    final patient = hospitalSystem.activePatients[patientChoice - 1];
-
-    print('\nSelect new room type:');
-    print('1. General Room');
-    print('2. Private Room');
-    print('3. ICU Room');
-    print('4. Emergency Room');
-    print('5. Operating Room');
-    stdout.write('Enter choice (1-5): ');
-
-    final roomChoice = stdin.readLineSync();
-    RoomType newRoomType;
-    switch (roomChoice) {
-      case '1':
-        newRoomType = RoomType.GENERAL_ROOM;
-        break;
-      case '2':
-        newRoomType = RoomType.PRIVATE_ROOM;
-        break;
-      case '3':
-        newRoomType = RoomType.ICU_ROOM;
-        break;
-      case '4':
-        newRoomType = RoomType.EMERGENCY_ROOM;
-        break;
-      case '5':
-        newRoomType = RoomType.OPERATING_ROOM;
-        break;
-      default:
-        print('Invalid room type selection.');
-        return;
-    }
-
-    try {
-      hospitalSystem.transferPatient(patient, newRoomType);
-      print('Patient transferred successfully.');
-      _saveData(); // Auto-save after transferring patient
-    } catch (e) {
-      print('Error transferring patient: $e');
-    }
+    _saveData(); // save after assigning patient
   }
 
   void showPatients() {
@@ -216,13 +147,15 @@ class SystemConsole {
           }
         }
 
-        final gender = patient.gender.toString().split('.').last;
-        final condition = patient.condition.toString().split('.').last;
-        final roomType = room?.type
-            .toString()
-            .split('.')
-            .last
-            .replaceAll('_', ' ');
+        final gender = hospitalSystem.enumType(
+          patient.gender.toString().split('.').last,
+        );
+        final condition = hospitalSystem.enumType(
+          patient.condition.toString().split('.').last,
+        );
+        final roomType = hospitalSystem.enumType(
+          room?.type.toString().split('.').last ?? 'UNKNOW',
+        );
 
         print(
           '  Name: ${patient.patientName} | Gender: $gender | Condition: $condition | '
@@ -234,7 +167,7 @@ class SystemConsole {
     if (hospitalSystem.recoveredPatients.isNotEmpty) {
       print('\nRecovered Patients:');
       for (final patient in hospitalSystem.recoveredPatients) {
-        print('- ${patient.patientName}');
+        print('- Name: ${patient.patientName}');
         print('  Entry Date: ${patient.entryDate}');
         print('  Leave Date: ${patient.leaveDate}');
         print('');
@@ -257,18 +190,17 @@ class SystemConsole {
           'Room ${room.roomNumber}: $availableBeds/$totalBeds beds available',
         );
 
-        // Debug info for each bed
         for (var i = 0; i < room.beds.length; i++) {
           final bed = room.beds[i];
           print(
-            '  Bed ${i + 1}: Status = ${bed.status.toString().split('.').last}, '
+            '  Bed ${i + 1}: Status = ${hospitalSystem.enumType(bed.status.toString().split('.').last)}, '
             '  Has Patient = ${bed.patient != null ? 'Yes (${bed.patient!.patientName})' : 'No'}',
           );
         }
       }
     }
 
-    printRoomStatus('Emergency Rooms', hospitalSystem.emergancyRooms);
+    printRoomStatus('Emergency Rooms', hospitalSystem.emergencyRooms);
     printRoomStatus('General Rooms', hospitalSystem.generalRooms);
     printRoomStatus('Private Rooms', hospitalSystem.privateRooms);
     printRoomStatus('ICU Rooms', hospitalSystem.icuRooms);
@@ -288,7 +220,7 @@ class SystemConsole {
       final patient = hospitalSystem.activePatients[i];
       final room = hospitalSystem.findPatientCurrentRoom(patient);
       print(
-        '${i + 1}. ${patient.patientName} (Current: ${patient.condition.toString().split('.').last}, Room: ${room?.type.toString().split('.').last.replaceAll('_', ' ')})',
+        '${i + 1}. ${patient.patientName} (Current: ${hospitalSystem.enumType(patient.condition.toString().split('.').last)}, Room: ${hospitalSystem.enumType(room?.type.toString().split('.').last ?? 'UNKNOW')})',
       );
     }
     stdout.write('Enter patient number: ');
@@ -324,7 +256,7 @@ class SystemConsole {
         newCondition = PatientCondition.CRITICAL;
         break;
       case '4':
-        newCondition = PatientCondition.NEEDS_SURGERY;
+        newCondition = PatientCondition.NEED_SURGERY;
         break;
       case '5':
         newCondition = PatientCondition.RECOVERED;
@@ -346,13 +278,12 @@ class SystemConsole {
           'Patient moved to ${newRoom?.type.toString().split('.').last.replaceAll('_', ' ')}',
         );
       }
-      _saveData(); // Auto-save after changing patient condition
+      _saveData(); // save after changing patient condition
     } catch (e) {
       print('Error updating patient condition: $e');
     }
   }
 
-  // Auto-save and auto-load methods
   Future<void> _saveData() async {
     try {
       await _storingData.saveData(hospitalSystem, _dataFilePath);
