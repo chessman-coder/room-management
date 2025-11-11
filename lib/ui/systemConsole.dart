@@ -266,6 +266,12 @@ class SystemConsole {
         return;
     }
 
+    if (newCondition == PatientCondition.STABLE) {
+      stdout.write('\nRequest private room? (y/n): ');
+      final privateRoom = stdin.readLineSync()?.toLowerCase() == 'y';
+      patient.requestPrivateRoom = privateRoom;
+    }
+
     try {
       hospitalSystem.changePatientCondition(patient, newCondition);
       print('Patient condition updated successfully.');
