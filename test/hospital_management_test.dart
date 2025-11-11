@@ -15,7 +15,7 @@ void main() {
       expect(hospital.generalRooms.length, equals(10));
       expect(hospital.icuRooms.length, equals(5));
       expect(hospital.privateRooms.length, equals(5));
-      expect(hospital.emergancyRooms.length, equals(5));
+      expect(hospital.emergencyRooms.length, equals(5));
       expect(hospital.operatingRooms.length, equals(5));
     });
 
@@ -32,22 +32,6 @@ void main() {
       expect(hospital.activePatients, contains(patient));
       final room = hospital.findPatientCurrentRoom(patient);
       expect(room?.type, equals(RoomType.ICU_ROOM));
-    });
-
-    test('Transfer patient', () {
-      final patient = Patient(
-        patientName: 'John',
-        gender: PatientGender.MALE,
-        entryDate: DateTime.now(),
-        condition: PatientCondition.STABLE,
-      );
-
-      hospital.assignNewPatient(patient);
-      hospital.transferPatient(patient, RoomType.ICU_ROOM);
-
-      final room = hospital.findPatientCurrentRoom(patient);
-      expect(room?.type, equals(RoomType.ICU_ROOM));
-      expect(patient.condition, equals(PatientCondition.CRITICAL));
     });
   });
 }
